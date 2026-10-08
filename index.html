@@ -680,6 +680,7 @@ section.visible .reveal{opacity:1;transform:none}.delay1{transition-delay:.08s}.
 
 .modal-photo-placeholder{width:100%;aspect-ratio:4/3;margin:0 0 22px;border:1px solid var(--ink);background:radial-gradient(circle at 30% 25%,rgba(200,255,24,.55),transparent 24%),linear-gradient(135deg,#e9e4d8 0%,#c8bfae 48%,#ff6550 100%);display:grid;place-items:center;align-content:center;gap:8px;overflow:hidden;position:relative}
 .modal-photo-placeholder:after{content:"";position:absolute;inset:12px;border:1px solid rgba(18,21,26,.35);pointer-events:none}
+.modal-photo-placeholder img{width:100%;height:100%;object-fit:cover;display:block;position:relative;z-index:1}.modal-program{margin-top:10px;font:800 10px/1.35 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}.modal-bio{margin-top:14px;font-size:14px;line-height:1.5;max-width:480px}.exec-board #execBoardContent{display:contents}
 .photo-placeholder-mark{position:relative;z-index:1;font:900 clamp(34px,6vw,64px)/.9 Georgia,serif;letter-spacing:-.05em}
 .photo-placeholder-note{position:relative;z-index:1;font:800 9px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;background:var(--ink);color:var(--paper);padding:8px 10px;text-align:center}
 
@@ -774,27 +775,25 @@ section.visible .reveal{opacity:1;transform:none}.delay1{transition-delay:.08s}.
   <div class="section-inner exec-layout">
     <div class="exec-copy"><div class="eyebrow reveal">04 / Executives</div><h2 class="reveal delay1 char-title">Meet the people behind SMCSS.</h2><p class="exec-note reveal delay2">The executive cards are ready for the current roster. Add confirmed names, programs, photos and contact details when the society provides them.</p><span class="exec-source reveal delay3">Roster · update when confirmed</span></div>
     <div class="exec-board reveal delay2">
-      <button class="exec-person feature" type="button" data-name="President" data-role="President" data-email=""><span class="person-top"><span class="num">01</span><span class="person-arrow">↗</span></span><span><strong>President</strong><p>Executive</p></span><span class="person-hint">Click to reveal photo placeholder ↗</span></button>
-      <button class="exec-person" type="button" data-name="Vice-President" data-role="Vice-President" data-email=""><span class="person-top"><span class="num">02</span><span class="person-arrow">↗</span></span><span><strong>Vice-President</strong><p>Executive</p></span><span class="person-hint">Click to reveal photo placeholder ↗</span></button>
-      <button class="exec-person" type="button" data-name="Treasurer" data-role="Treasurer" data-email=""><span class="person-top"><span class="num">03</span><span class="person-arrow">↗</span></span><span><strong>Treasurer</strong><p>Executive</p></span><span class="person-hint">Click to reveal photo placeholder ↗</span></button>
-      <button class="exec-person" type="button" data-name="Secretary" data-role="Secretary" data-email=""><span class="person-top"><span class="num">04</span><span class="person-arrow">↗</span></span><span><strong>Secretary</strong><p>Executive</p></span><span class="person-hint">Click to reveal photo placeholder ↗</span></button>
-      <button class="exec-person" type="button" data-name="Activities Director" data-role="Activities Director" data-email=""><span class="person-top"><span class="num">05</span><span class="person-arrow">↗</span></span><span><strong>Activities Director</strong><p>Executive</p></span><span class="person-hint">Click to reveal photo placeholder ↗</span></button>
-      <button class="exec-person" type="button" data-name="Faculty Adviser" data-role="Faculty Adviser" data-email=""><span class="person-top"><span class="num">06</span><span class="person-arrow">↗</span></span><span><strong>Faculty Adviser</strong><p>Executive</p></span><span class="person-hint">Click to reveal photo placeholder ↗</span></button>
-    </div>
+      <div id="execBoardContent" aria-live="polite"></div>
+</div>
   </div>
 </section>
 
 <div class="exec-modal" id="execModal" aria-hidden="true">
   <div class="exec-modal-card" role="dialog" aria-modal="true" aria-labelledby="modalName">
     <button class="exec-modal-close" type="button" id="execModalClose">Close ×</button>
-    <div class="modal-photo-placeholder" aria-label="Demo photo placeholder">
-      <div class="photo-placeholder-mark">PHOTO</div>
-      <div class="photo-placeholder-note">Demo image — replace with the executive's photo</div>
+    <div class="modal-photo-placeholder" id="modalPhotoBox" aria-label="Executive photo">
+      <img id="modalPhoto" alt="" hidden>
+      <div class="photo-placeholder-mark" id="modalPhotoMark">PHOTO</div>
+      <div class="photo-placeholder-note" id="modalPhotoNote">Add the executive photo in content.js</div>
     </div>
     <div class="modal-kicker">SMCSS Executive Member</div>
     <h3 id="modalName">Executive</h3>
-    <div class="modal-role" id="modalRole">President</div>
-    <div class="modal-email" id="modalEmail">Executive contact details will be added after the official roster is confirmed.</div>
+    <div class="modal-role" id="modalRole">Role</div>
+    <div class="modal-program" id="modalProgram"></div>
+    <p class="modal-bio" id="modalBio"></p>
+    <a class="modal-email" id="modalEmail">Executive email not published yet.</a>
   </div>
 </div>
 
@@ -838,6 +837,22 @@ section.visible .reveal{opacity:1;transform:none}.delay1{transition-delay:.08s}.
 
 <script src="content.js"></script>
 
+<script id="smcss-executive-renderer">
+(() => {
+  const board=document.getElementById('execBoardContent');
+  const executives=Array.isArray(window.EXECUTIVES)?window.EXECUTIVES:[];
+  if(!board)return;
+  const esc=value=>String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  if(!executives.length){board.innerHTML='<p class="exec-note">The current executive roster has not been added yet.</p>';return;}
+  board.innerHTML=executives.map((person,index)=>{
+    const role=esc(person.role||'Executive'), name=esc(person.name||role), program=esc(person.program||''), email=esc(person.email||''), photo=esc(person.photo||''), bio=esc(person.bio||'');
+    const feature=person.feature||index===0?' feature':'';
+    const number=String(index+1).padStart(2,'0');
+    const subtitle=program||'Executive';
+    return `<button class="exec-person${feature}" type="button" data-name="${name}" data-role="${role}" data-program="${program}" data-email="${email}" data-photo="${photo}" data-bio="${bio}" aria-label="View ${name}, ${role}"><span class="person-top"><span class="num">${number}</span><span class="person-arrow">↗</span></span><span><strong>${name}</strong><p>${esc(subtitle)}</p></span><span class="person-hint">Click to reveal details ↗</span></button>`;
+  }).join('');
+})();
+</script>
 <script id="smcss-event-renderer">
 (() => {
   const list = document.getElementById('directEventList');
@@ -1002,13 +1017,23 @@ const execModal=document.getElementById('execModal');
 const execModalClose=document.getElementById('execModalClose');
 const modalName=document.getElementById('modalName');
 const modalRole=document.getElementById('modalRole');
+const modalProgram=document.getElementById('modalProgram');
+const modalBio=document.getElementById('modalBio');
 const modalEmail=document.getElementById('modalEmail');
+const modalPhoto=document.getElementById('modalPhoto');
+const modalPhotoMark=document.getElementById('modalPhotoMark');
+const modalPhotoNote=document.getElementById('modalPhotoNote');
 let lastExecTrigger=null;
 function openExecModal(card){
   lastExecTrigger=card;
-  modalName.textContent=card.dataset.name;
-  modalRole.textContent=card.dataset.role;
-  if(card.dataset.email){ modalEmail.href='mailto:'+card.dataset.email; modalEmail.textContent=card.dataset.email+' ↗'; } else { modalEmail.removeAttribute('href'); modalEmail.textContent='Executive contact details will be added after the official roster is confirmed.'; }
+  modalName.textContent=card.dataset.name||card.dataset.role||'Executive';
+  modalRole.textContent=card.dataset.role||'Executive';
+  modalProgram.textContent=card.dataset.program||''; modalProgram.hidden=!card.dataset.program;
+  modalBio.textContent=card.dataset.bio||''; modalBio.hidden=!card.dataset.bio;
+  if(card.dataset.photo){ modalPhoto.src=card.dataset.photo; modalPhoto.alt=(card.dataset.name||card.dataset.role||'Executive')+' photo'; modalPhoto.hidden=false; modalPhotoMark.hidden=true; modalPhotoNote.hidden=true; }
+  else { modalPhoto.removeAttribute('src'); modalPhoto.hidden=true; modalPhotoMark.hidden=false; modalPhotoNote.hidden=false; modalPhotoNote.textContent='Add the executive photo in content.js'; }
+  if(card.dataset.email){ modalEmail.href='mailto:'+card.dataset.email; modalEmail.textContent=card.dataset.email+' ↗'; }
+  else { modalEmail.removeAttribute('href'); modalEmail.textContent='Executive email not published yet.'; }
   execModal.classList.add('open');
   execModal.setAttribute('aria-hidden','false');
   document.body.style.overflow='hidden';
